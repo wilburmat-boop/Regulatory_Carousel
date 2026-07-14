@@ -135,14 +135,8 @@
             animation: statusPulse 0.6s ease-out;
         }
         @keyframes statusPulse {
-            0%,
-            100% {
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-            }
-            50% {
-                box-shadow: 0 4px 40px rgba(255, 100, 60, 0.7);
-                border-color: rgba(255, 120, 60, 0.7);
-            }
+            0%, 100% { box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3); }
+            50% { box-shadow: 0 4px 40px rgba(255, 100, 60, 0.7); border-color: rgba(255, 120, 60, 0.7); }
         }
 
         .legend {
@@ -168,38 +162,16 @@
             border-radius: 50%;
             flex-shrink: 0;
         }
-        .legend-dot.type1 {
-            background: #ff7043;
-            box-shadow: 0 0 10px #ff7043;
-        }
-        .legend-dot.type2 {
-            background: #f0b040;
-            box-shadow: 0 0 10px #f0b040;
-        }
-        .legend-dot.type3 {
-            background: #9966dd;
-            box-shadow: 0 0 10px #9966dd;
-        }
-        .legend-dot.type4 {
-            background: #dd3344;
-            box-shadow: 0 0 10px #dd3344;
-        }
+        .legend-dot.type1 { background: #ff7043; box-shadow: 0 0 10px #ff7043; }
+        .legend-dot.type2 { background: #f0b040; box-shadow: 0 0 10px #f0b040; }
+        .legend-dot.type3 { background: #9966dd; box-shadow: 0 0 10px #9966dd; }
+        .legend-dot.type4 { background: #dd3344; box-shadow: 0 0 10px #dd3344; }
 
         @media (max-width: 500px) {
-            .canvas-wrapper {
-                max-width: 95vw;
-            }
-            .day-counter .days {
-                font-size: 1.4rem;
-            }
-            .legend {
-                gap: 4px;
-                font-size: 0.55rem;
-            }
-            .legend-item {
-                padding: 4px 8px;
-                gap: 3px;
-            }
+            .canvas-wrapper { max-width: 95vw; }
+            .day-counter .days { font-size: 1.4rem; }
+            .legend { gap: 4px; font-size: 0.55rem; }
+            .legend-item { padding: 4px 8px; gap: 3px; }
         }
     </style>
 </head>
@@ -241,6 +213,21 @@
             const dayCountEl = document.getElementById('dayCount');
             const statusTag = document.getElementById('statusTag');
 
+            // --- Helper: manual rounded rectangle (compatible with all browsers) ---
+            function drawRoundedRect(ctx, x, y, width, height, radius) {
+                ctx.beginPath();
+                ctx.moveTo(x + radius, y);
+                ctx.lineTo(x + width - radius, y);
+                ctx.arcTo(x + width, y, x + width, y + radius, radius);
+                ctx.lineTo(x + width, y + height - radius);
+                ctx.arcTo(x + width, y + height, x + width - radius, y + height, radius);
+                ctx.lineTo(x + radius, y + height);
+                ctx.arcTo(x, y + height, x, y + height - radius, radius);
+                ctx.lineTo(x, y + radius);
+                ctx.arcTo(x, y, x + radius, y, radius);
+                ctx.closePath();
+            }
+
             // --- Canvas sizing ---
             const SIZE = 700;
             let scale = 1;
@@ -262,7 +249,6 @@
             const TRACK_RADIUS = 230;
 
             // --- Station definitions ---
-            // 8 stations, clockwise from top
             const stationDefs = [
                 { id: 'CCMA', label: 'CCMA', angle: -Math.PI / 2, gateType: 1, gateName: 'Jurisdictional Gate',
                     detail: '"Not Us" — No PDA jurisdiction', fullDetail: 'Rejects citing lack of jurisdiction for PDA matters.' },
@@ -285,7 +271,6 @@
                     fullDetail: 'Station Commander refuses to open case without reviewing evidence.' },
             ];
 
-            // Precompute station positions
             const stations = stationDefs.map((def, i) => ({
                 ...def,
                 index: i,
@@ -295,7 +280,6 @@
                 labelY: CY + (TRACK_RADIUS + 48) * Math.sin(def.angle),
             }));
 
-            // --- Gate type colors ---
             const gateColors = {
                 1: { main: '#ff7043', glow: '#ff4400', particle: ['#ff7043', '#ff9966', '#ff4400', '#ffcc88'] },
                 2: { main: '#f0b040', glow: '#e09820', particle: ['#f0b040', '#ffcc55', '#e8a020', '#ffd870'] },
@@ -304,15 +288,15 @@
             };
 
             // --- State ---
-            let dossierAngle = stations[0].angle - 0.35; // Start just before first station
+            let dossierAngle = stations[0].angle - 0.35;
             let angularSpeed = 0.0008;
             let dayCount = 0;
-            let visitedMask = 0; // bitmask of visited stations this lap
+            let visitedMask = 0;
             let lapCount = 0;
             let particles = [];
             let trailPoints = [];
             const MAX_TRAIL = 55;
-            let rejectionFlash = null; // { station, alpha, startTime }
+            let rejectionFlash = null;
             let shakeAmount = 0;
             let globalTime = 0;
             let lastStationTriggered = -1;
@@ -336,7 +320,6 @@
                         size: 1.2 + Math.random() * 3.5,
                     });
                 }
-                // Extra "spark" particles that go further
                 for (let i = 0; i < 12; i++) {
                     const angle = Math.random() * Math.PI * 2;
                     const speed = 7 + Math.random() * 9;
@@ -386,7 +369,6 @@
                 trailPoints.push({ x: dossierX, y: dossierY, life: 1.0 });
                 if (trailPoints.length > MAX_TRAIL) trailPoints.shift();
                 for (const tp of trailPoints) tp.life -= 0.018;
-                // Remove dead
                 for (let i = trailPoints.length - 1; i >= 0; i--) {
                     if (trailPoints[i].life <= 0) trailPoints.splice(i, 1);
                 }
@@ -411,7 +393,6 @@
                     ctx.stroke();
                     ctx.restore();
                 }
-                // Glow dots at recent positions
                 for (let i = Math.max(0, trailPoints.length - 15); i < trailPoints.length; i++) {
                     const tp = trailPoints[i];
                     const alpha = tp.life * 0.6;
@@ -430,7 +411,6 @@
 
             // --- Drawing helpers ---
             function drawTrack(ctx) {
-                // Outer glow ring
                 const glowGrad = ctx.createRadialGradient(CX, CY, TRACK_RADIUS - 8, CX, CY, TRACK_RADIUS + 12);
                 glowGrad.addColorStop(0, 'rgba(180,160,220,0.03)');
                 glowGrad.addColorStop(0.5, 'rgba(180,140,200,0.12)');
@@ -441,12 +421,9 @@
                 ctx.arc(CX, CY, TRACK_RADIUS, 0, Math.PI * 2);
                 ctx.stroke();
 
-                // Main track rings
                 for (let ring = 0; ring < 2; ring++) {
                     const r = TRACK_RADIUS + (ring === 0 ? -5 : 5);
-                    ctx.strokeStyle = ring === 0 ?
-                        'rgba(200,180,220,0.25)' :
-                        'rgba(180,160,200,0.18)';
+                    ctx.strokeStyle = ring === 0 ? 'rgba(200,180,220,0.25)' : 'rgba(180,160,200,0.18)';
                     ctx.lineWidth = ring === 0 ? 2.5 : 1.5;
                     ctx.setLineDash(ring === 0 ? [] : [8, 20]);
                     ctx.beginPath();
@@ -455,7 +432,6 @@
                     ctx.setLineDash([]);
                 }
 
-                // Subtle inner track
                 ctx.strokeStyle = 'rgba(150,140,180,0.10)';
                 ctx.lineWidth = 1;
                 ctx.setLineDash([3, 16]);
@@ -470,26 +446,6 @@
                 const baseRadius = 10;
                 const pulseRadius = isActive ? baseRadius + 6 + Math.sin(globalTime * 8) * 4 : baseRadius;
 
-                // Outer glow
-                const glowGrad = ctx.createRadialGradient(station.x, station.y, baseRadius * 0.5, station.x, station.y,
-                    pulseRadius * 3.5);
-                const glowColor = gc.glow;
-                glowGrad.addColorStop(0, glowColor.replace(')', ',0.7)').replace('rgb',
-                    'rgba').replace('#', 'rgba(').replace(
-                    /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i,
-                    (m, r, g, b) => `rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`);
-                // Simpler glow
-                const alpha0 = isActive ? 0.8 : 0.3;
-                const alpha1 = 0;
-                glowGrad.addColorStop(0, gc.glow +
-                    `,${(alpha0 + (flashAlpha || 0) * 0.6).toFixed(2)})`.replace('rgb', 'rgba').replace('#',
-                        'rgba(').replace(
-                        /^rgba\(([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})/i,
-                        (m, r, g, b) =>
-                        `rgba(${parseInt(r,16)},${parseInt(g,16)},${parseInt(b,16)}`);
-                glowGrad.addColorStop(1, 'rgba(0,0,0,0)');
-
-                // Actually let me just draw the glow simply
                 ctx.save();
                 const glowAlpha = (isActive ? 0.7 : 0.25) + (flashAlpha || 0) * 0.5;
                 ctx.globalAlpha = Math.min(1, glowAlpha);
@@ -501,9 +457,7 @@
                 ctx.fill();
                 ctx.restore();
 
-                // Station body
-                const bodyGrad = ctx.createRadialGradient(station.x - 2, station.y - 2, baseRadius * 0.2, station.x,
-                    station.y, baseRadius);
+                const bodyGrad = ctx.createRadialGradient(station.x - 2, station.y - 2, baseRadius * 0.2, station.x, station.y, baseRadius);
                 bodyGrad.addColorStop(0, '#ffffff');
                 bodyGrad.addColorStop(0.4, gc.main);
                 bodyGrad.addColorStop(1, '#1a1a2e');
@@ -515,7 +469,6 @@
                 ctx.fill();
                 ctx.shadowBlur = 0;
 
-                // Ring around station
                 ctx.strokeStyle = gc.main;
                 ctx.lineWidth = 2;
                 ctx.globalAlpha = isActive ? 0.9 : 0.5;
@@ -524,7 +477,6 @@
                 ctx.stroke();
                 ctx.globalAlpha = 1;
 
-                // Gate indicator bars (small lines radiating from station)
                 const barCount = station.gateType === 4 ? 6 : 4;
                 for (let b = 0; b < barCount; b++) {
                     const ba = (b / barCount) * Math.PI * 2;
@@ -544,14 +496,12 @@
                 }
                 ctx.globalAlpha = 1;
 
-                // Label
                 ctx.fillStyle = '#e0d8f0';
                 ctx.font = 'bold 11px "Segoe UI","Inter",system-ui,sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(station.label, station.labelX, station.labelY);
 
-                // Small gate type indicator dot near label
                 const dotX = station.labelX;
                 const dotY = station.labelY - 14;
                 ctx.fillStyle = gc.main;
@@ -564,18 +514,15 @@
             }
 
             function drawDossier(ctx, x, y, angle) {
-                // Dossier as a document/folder shape
                 const w = 16;
                 const h = 20;
                 ctx.save();
                 ctx.translate(x, y);
-                ctx.rotate(angle + Math.PI / 2); // Orient along track tangent
+                ctx.rotate(angle + Math.PI / 2);
 
-                // Shadow
                 ctx.fillStyle = 'rgba(0,0,0,0.5)';
                 ctx.fillRect(-w / 2 + 2, -h / 2 + 2, w, h);
 
-                // Document body
                 const docGrad = ctx.createLinearGradient(-w / 2, 0, w / 2, 0);
                 docGrad.addColorStop(0, '#e8dcc8');
                 docGrad.addColorStop(0.5, '#faf3e6');
@@ -583,12 +530,10 @@
                 ctx.fillStyle = docGrad;
                 ctx.fillRect(-w / 2, -h / 2, w, h);
 
-                // Document border
                 ctx.strokeStyle = '#b8a080';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(-w / 2, -h / 2, w, h);
 
-                // Fold corner
                 ctx.fillStyle = '#d0c0a0';
                 ctx.beginPath();
                 ctx.moveTo(w / 2 - 5, -h / 2);
@@ -600,7 +545,6 @@
                 ctx.lineWidth = 0.8;
                 ctx.stroke();
 
-                // Lines on document
                 ctx.strokeStyle = '#c8b898';
                 ctx.lineWidth = 0.7;
                 for (let ly = -4; ly <= 6; ly += 4) {
@@ -610,7 +554,6 @@
                     ctx.stroke();
                 }
 
-                // Glow
                 ctx.shadowColor = '#ffcc66';
                 ctx.shadowBlur = 12;
                 ctx.strokeStyle = 'rgba(255,200,120,0.5)';
@@ -621,7 +564,6 @@
                 ctx.restore();
             }
 
-            // --- Find nearest upcoming station ---
             function getUpcomingStation(angle) {
                 let normalized = ((angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
                 let bestStation = null;
@@ -638,7 +580,6 @@
                 return { station: bestStation, distance: bestDist };
             }
 
-            // --- Main animation ---
             let lastTime = performance.now();
             let rejectionLabelAlpha = 0;
             let rejectionLabelText = '';
@@ -646,53 +587,38 @@
 
             function update(dt) {
                 globalTime += dt;
-                // Clamp dt
                 if (dt > 0.1) dt = 0.1;
                 if (dt <= 0) dt = 0.016;
 
-                // Update cooldown
                 if (cooldownTimer > 0) cooldownTimer -= dt;
-
-                // Update shake decay
                 if (shakeAmount > 0) shakeAmount = Math.max(0, shakeAmount - dt * 4);
-
-                // Update rejection label
                 if (rejectionLabelAlpha > 0) {
                     rejectionLabelAlpha -= dt * 1.2;
                     if (rejectionLabelAlpha < 0) rejectionLabelAlpha = 0;
                 }
 
-                // Determine speed based on proximity to upcoming station
                 const upcoming = getUpcomingStation(dossierAngle);
-                let targetSpeed = 0.0015; // fast travel
+                let targetSpeed = 0.0015;
                 if (upcoming.station && upcoming.distance < 0.25) {
-                    // Slow down near station
                     const t = Math.max(0, upcoming.distance / 0.25);
                     const eased = t < 0.3 ? (t / 0.3) * 0.15 : 0.15 + (1 - 0.15) * ((t - 0.3) / 0.7);
                     targetSpeed = 0.00015 + eased * 0.00135;
                 }
-                // Smooth speed transition
                 angularSpeed += (targetSpeed - angularSpeed) * Math.min(1, dt * 5);
 
-                // Move dossier
                 dossierAngle += angularSpeed * dt * 60;
-                // Wrap angle
                 while (dossierAngle > Math.PI * 2) dossierAngle -= Math.PI * 2;
                 while (dossierAngle < 0) dossierAngle += Math.PI * 2;
 
-                // Check if we passed a station
                 const normalized = dossierAngle;
                 for (const st of stations) {
                     const sa = ((st.angle % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2);
                     const dist = Math.abs(normalized - sa);
                     const wrappedDist = Math.min(dist, Math.PI * 2 - dist);
 
-                    // Trigger when very close to station and cooldown is done
                     if (wrappedDist < 0.06 && cooldownTimer <= 0 && lastStationTriggered !== st.index) {
-                        // Check if this station was already visited this lap
                         const maskBit = 1 << st.index;
                         if (!(visitedMask & maskBit)) {
-                            // Trigger gate!
                             visitedMask |= maskBit;
                             lastStationTriggered = st.index;
                             cooldownTimer = 0.6;
@@ -704,49 +630,39 @@
                             if (st.gateType === 4) shakeAmount = 0.7;
                             if (st.gateType === 3) shakeAmount = 0.35;
 
-                            // Update status tag
                             statusTag.classList.remove('flash');
                             void statusTag.offsetWidth;
                             statusTag.classList.add('flash');
                             statusTag.querySelector('.gate-name').textContent = st.gateName;
                             statusTag.querySelector('.gate-detail').textContent = st.fullDetail;
                             statusTag.style.borderColor = gateColors[st.gateType].main;
-                            statusTag.style.boxShadow =
-                                `0 4px 30px ${gateColors[st.gateType].glow}66`;
+                            statusTag.style.boxShadow = `0 4px 30px ${gateColors[st.gateType].glow}66`;
 
-                            // Check if full lap completed
                             if (visitedMask === 0xFF) {
-                                // All 8 stations visited
                                 lapCount++;
                                 visitedMask = 0;
                                 dayCount += Math.floor(100 + Math.random() * 40);
-                                // Extra particles at completion
                                 for (const s of stations) {
                                     setTimeout(() => spawnParticles(s, 15), Math.random() * 800);
                                 }
                             }
                         }
                     }
-                    // Reset lastStationTriggered when far enough away
                     if (wrappedDist > 0.3 && lastStationTriggered === st.index && cooldownTimer <= 0) {
                         lastStationTriggered = -1;
                     }
                 }
 
-                // Accumulate days based on angular travel
                 dayCount += angularSpeed * dt * 60 * 3.5;
                 dayCountEl.textContent = Math.floor(dayCount);
 
-                // Update rejection flash
                 if (rejectionFlash) {
                     rejectionFlash.alpha -= dt * 2.5;
                     if (rejectionFlash.alpha <= 0) rejectionFlash = null;
                 }
 
-                // Update particles
                 updateParticles(dt);
 
-                // Update trail
                 const dx = CX + TRACK_RADIUS * Math.cos(dossierAngle);
                 const dy = CY + TRACK_RADIUS * Math.sin(dossierAngle);
                 updateTrail(dx, dy);
@@ -762,24 +678,25 @@
 
                 ctx.save();
                 ctx.globalAlpha = alpha;
-                // Background pill
+
+                ctx.font = 'bold 10px "Segoe UI","Inter",system-ui,sans-serif';
                 const textWidth = ctx.measureText(rejectionLabelText).width;
                 const pw = textWidth + 24;
                 const ph = 22;
+
                 ctx.fillStyle = 'rgba(10,10,20,0.85)';
                 ctx.strokeStyle = gc.main;
                 ctx.lineWidth = 1.5;
                 ctx.shadowColor = gc.glow;
                 ctx.shadowBlur = 16;
-                ctx.beginPath();
-                ctx.roundRect(lx - pw / 2, ly - ph / 2, pw, ph, 11);
+
+                // Use manual rounded rect instead of ctx.roundRect
+                drawRoundedRect(ctx, lx - pw / 2, ly - ph / 2, pw, ph, 11);
                 ctx.fill();
                 ctx.stroke();
                 ctx.shadowBlur = 0;
 
-                // Text
                 ctx.fillStyle = '#ffffff';
-                ctx.font = 'bold 10px "Segoe UI","Inter",system-ui,sans-serif';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText(rejectionLabelText, lx, ly);
@@ -787,7 +704,6 @@
             }
 
             function drawCenterLabel(ctx) {
-                // Subtle center text
                 ctx.fillStyle = 'rgba(180,170,200,0.35)';
                 ctx.font = 'italic 13px "Segoe UI","Inter",system-ui,sans-serif';
                 ctx.textAlign = 'center';
@@ -800,29 +716,24 @@
             }
 
             function drawConnectionArrows(ctx) {
-                // Draw subtle directional arrows between stations
                 for (let i = 0; i < stations.length; i++) {
                     const curr = stations[i];
                     const next = stations[(i + 1) % stations.length];
                     const midAngle = (curr.angle + next.angle) / 2;
                     if (next.angle < curr.angle) midAngle += Math.PI;
-                    // Normalize
                     let ma = midAngle;
                     while (ma > Math.PI * 2) ma -= Math.PI * 2;
                     while (ma < 0) ma += Math.PI * 2;
                     const mx = CX + TRACK_RADIUS * Math.cos(ma);
                     const my = CY + TRACK_RADIUS * Math.sin(ma);
 
-                    // Small arrowhead
-                    const arrowAngle = ma + Math.PI / 2; // tangent
+                    const arrowAngle = ma + Math.PI / 2;
                     const arrowSize = 7;
                     ctx.fillStyle = 'rgba(180,160,200,0.3)';
                     ctx.beginPath();
                     ctx.moveTo(mx + Math.cos(arrowAngle) * arrowSize, my + Math.sin(arrowAngle) * arrowSize);
-                    ctx.lineTo(mx + Math.cos(arrowAngle + 2.4) * arrowSize * 0.7, my + Math.sin(arrowAngle + 2.4) *
-                        arrowSize * 0.7);
-                    ctx.lineTo(mx + Math.cos(arrowAngle - 2.4) * arrowSize * 0.7, my + Math.sin(arrowAngle - 2.4) *
-                        arrowSize * 0.7);
+                    ctx.lineTo(mx + Math.cos(arrowAngle + 2.4) * arrowSize * 0.7, my + Math.sin(arrowAngle + 2.4) * arrowSize * 0.7);
+                    ctx.lineTo(mx + Math.cos(arrowAngle - 2.4) * arrowSize * 0.7, my + Math.sin(arrowAngle - 2.4) * arrowSize * 0.7);
                     ctx.closePath();
                     ctx.fill();
                 }
@@ -835,9 +746,7 @@
 
                 ctx.clearRect(0, 0, SIZE, SIZE);
 
-                // Apply subtle shake
-                let sx = 0,
-                    sy = 0;
+                let sx = 0, sy = 0;
                 if (shakeAmount > 0.01) {
                     sx = (Math.random() - 0.5) * shakeAmount * 8;
                     sy = (Math.random() - 0.5) * shakeAmount * 8;
@@ -845,20 +754,15 @@
                 ctx.save();
                 ctx.translate(sx, sy);
 
-                // Background radial
                 const bgGrad = ctx.createRadialGradient(CX, CY, 60, CX, CY, SIZE * 0.7);
                 bgGrad.addColorStop(0, '#1a1a30');
                 bgGrad.addColorStop(1, '#080812');
                 ctx.fillStyle = bgGrad;
                 ctx.fillRect(0, 0, SIZE, SIZE);
 
-                // Draw track
                 drawTrack(ctx);
-
-                // Draw connection arrows
                 drawConnectionArrows(ctx);
 
-                // Determine which station is "active" (dossier nearby)
                 let activeStationIndex = -1;
                 const normalized = dossierAngle;
                 let minDist = Infinity;
@@ -871,7 +775,6 @@
                     }
                 }
 
-                // Draw stations
                 const flashAlpha = rejectionFlash ? rejectionFlash.alpha : 0;
                 for (let i = 0; i < stations.length; i++) {
                     const isActive = i === activeStationIndex && minDist < 0.25;
@@ -879,14 +782,11 @@
                     drawStation(ctx, stations[i], isActive, isFlashing ? flashAlpha : 0);
                 }
 
-                // Draw trail
                 drawTrail(ctx);
 
-                // Draw dossier
                 const dx = CX + TRACK_RADIUS * Math.cos(dossierAngle);
                 const dy = CY + TRACK_RADIUS * Math.sin(dossierAngle);
                 const tangentAngle = dossierAngle + Math.PI / 2;
-                // Glow underneath dossier
                 const dossierGlow = ctx.createRadialGradient(dx, dy, 4, dx, dy, 22);
                 dossierGlow.addColorStop(0, 'rgba(255,220,150,0.7)');
                 dossierGlow.addColorStop(1, 'rgba(255,150,60,0)');
@@ -896,19 +796,12 @@
                 ctx.fill();
 
                 drawDossier(ctx, dx, dy, tangentAngle);
-
-                // Draw particles
                 drawParticles(ctx);
-
-                // Draw rejection label
                 drawRejectionLabel(ctx);
-
-                // Draw center label
                 drawCenterLabel(ctx);
 
                 ctx.restore();
 
-                // Draw vignette overlay
                 const vignetteGrad = ctx.createRadialGradient(CX, CY, SIZE * 0.35, CX, CY, SIZE * 0.75);
                 vignetteGrad.addColorStop(0, 'rgba(0,0,0,0)');
                 vignetteGrad.addColorStop(1, 'rgba(0,0,0,0.55)');
@@ -918,7 +811,6 @@
                 requestAnimationFrame(render);
             }
 
-            // --- Handle click on canvas to highlight stations ---
             canvas.addEventListener('click', (e) => {
                 const rect = canvas.getBoundingClientRect();
                 const mx = (e.clientX - rect.left) / scale;
@@ -926,7 +818,6 @@
                 for (const st of stations) {
                     const dist = Math.hypot(mx - st.x, my - st.y);
                     if (dist < 28) {
-                        // Clicked on a station - show info
                         spawnParticles(st, 25);
                         rejectionLabelAlpha = 1.5;
                         rejectionLabelText = st.detail;
@@ -943,7 +834,6 @@
                 }
             });
 
-            // --- Start ---
             // Initialize trail
             const initX = CX + TRACK_RADIUS * Math.cos(dossierAngle);
             const initY = CY + TRACK_RADIUS * Math.sin(dossierAngle);
@@ -956,15 +846,6 @@
             dayCountEl.textContent = '0';
 
             requestAnimationFrame(render);
-
-            console.log('🔄 Regulatory Carousel initialized.');
-            console.log('   Watch the dossier cycle endlessly through 8 gates.');
-            console.log('   Click any station to see its gate mechanism details.');
-            console.log('   Gate Types:');
-            console.log('   🟠 Type 1: "Not Us" — Jurisdictional Deflection (CCMA, DEL, JSE)');
-            console.log('   🟡 Type 2: "Not Best Placed" — Institutional Inertia (SAHRC, CMS)');
-            console.log('   🟣 Type 3: "Null Space" — Technical Black Hole (HPCSA/SAPC/SANC)');
-            console.log('   🔴 Type 4: "Hard Stop" — Active Obstruction (Labour Court, SAPS)');
         })();
     </script>
 </body>
